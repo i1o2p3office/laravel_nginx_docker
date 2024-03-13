@@ -30,6 +30,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
       cron \
       sudo \
       libzip-dev \
+    && pecl install redis \
+    && pecl install mongodb \
     && docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
     && docker-php-ext-configure intl \
     && docker-php-ext-install \
@@ -38,6 +40,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
       intl \
       opcache \
       zip \
+    && docker-php-ext-enable redis mongodb \
     && rm -rf /tmp/* \
     && rm -rf /var/list/apt/* \
     && rm -rf /var/lib/apt/lists/* \
@@ -72,21 +75,18 @@ RUN echo 'alias l="ls $LS_OPTIONS -lA"' >> ~/.bashrc
 # set working directory
 WORKDIR /var/www/html
 
-RUN mkdir storage \
-  && chmod -R 777 storage \
+# copy source files and config file
+COPY --chown=www-data:www-data ./laravel /var/www/html/
+
+RUN chmod -R 777 storage \
   && chown -R www-data:www-data storage 
 
-RUN mkdir bootstrap \
-  && mkdir bootstrap/cache \
-  && chmod -R 777 bootstrap/cache \
+RUN chmod -R 777 bootstrap/cache \
   && chown -R www-data:www-data bootstrap
 
 USER www-data
 
-# copy source files and config file
-COPY --chown=www-data:www-data ./laravel /var/www/html/
-
 # install all PHP dependencies
-RUN COMPOSER_MEMORY_LIMIT=-1 composer install --optimize-autoloader --no-interaction --no-progress; 
+# RUN COMPOSER_MEMORY_LIMIT=-1 composer install --optimize-autoloader --no-interaction --no-progress; 
 
 USER root
